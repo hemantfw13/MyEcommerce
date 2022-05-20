@@ -1,38 +1,33 @@
-const app = require("./app");
-const cloudinary = require("cloudinary");
-const connectDatabase = require("./config/database");
+import express from "express";
+import "./config/mongoDb.js";
+import userRouter from "./routes/userRouter.js";
+import productRouter from "./routes/productRoute.js";
+import dotenv from "dotenv";
+import orderRouter from "./routes/orderRouter.js";
+dotenv.config();
 
-// Handling Uncaught Exception
-process.on("uncaughtException", (err) => {
-  console.log(`Error: ${err.message}`);
-  console.log(`Shutting down the server due to Uncaught Exception`);
-  process.exit(1);
+const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// userRouter
+app.use("/api/users", userRouter);
+// productRouter
+app.use("/api/products", productRouter);
+// oderRouter
+app.use("/api/orders", orderRouter);
+// middleware
+app.use((err, req, res, next) => {
+  res.status(500).send({ message: err.message });
+});
+app.get("/api/config/paypal", (req, res) => {
+  res.send(process.env.PAYPAL_CLIENT_ID || "sb");
+});
+app.get("/", (req, res) => {
+  res.send("Server is ready and port runing");
 });
 
-// Config
-if (process.env.NODE_ENV !== "PRODUCTION") {
-  require("dotenv").config({ path: "backend/config/config.env" });
-}
-
-// Connecting to database
-connectDatabase();
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-const server = app.listen(process.env.PORT, () => {
-  console.log(`Server is working on http://localhost:${process.env.PORT}`);
-});
-
-// Unhandled Promise Rejection
-process.on("unhandledRejection", (err) => {
-  console.log(`Error: ${err.message}`);
-  console.log(`Shutting down the server due to Unhandled Promise Rejection`);
-
-  server.close(() => {
-    process.exit(1);
-  });
+app.listen(1000, () => {
+  console.log("Server at http://localhost:1000");
 });

@@ -1,41 +1,37 @@
-const express = require("express");
-const {
-  getAllProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  getProductDetails,
-  createProductReview,
-  getProductReviews,
-  deleteReview,
-  getAdminProducts,
-} = require("../controllers/productController");
-const { isAuthenticatedUser, authorizeRoles } = require("../middleware/auth");
+import express from "express";
+import data from "../data.js";
+import expressAsyncHandler from "express-async-handler";
+import Product from "../models/productModel.js";
 
-const router = express.Router();
+const productRouter = express.Router();
 
-router.route("/products").get(getAllProducts);
+productRouter.get(
+  "/",
+  expressAsyncHandler(async (req, res) => {
+    const products = await Product.find({});
+    res.send(products);
+  })
+);
 
-router
-  .route("/admin/products")
-  .get(isAuthenticatedUser, authorizeRoles("admin"), getAdminProducts);
+productRouter.get(
+  "/seed",
+  expressAsyncHandler(async (req, res) => {
+    // await Product.remove({})
+    const createProducts = await Product.insertMany(data.products);
+    res.send({ createProducts });
+  })
+);
 
-router
-  .route("/admin/product/new")
-  .post(isAuthenticatedUser, authorizeRoles("admin"), createProduct);
+productRouter.get(
+  "/:id",
+  expressAsyncHandler(async (req, res) => {
+    const product = await Product.findById(req.params.id);
+    if (product) {
+      res.send(product);
+    } else {
+      res.status(404).send({ message: "Product Not Found" });
+    }
+  })
+);
 
-router
-  .route("/admin/product/:id")
-  .put(isAuthenticatedUser, authorizeRoles("admin"), updateProduct)
-  .delete(isAuthenticatedUser, authorizeRoles("admin"), deleteProduct);
-
-router.route("/product/:id").get(getProductDetails);
-
-router.route("/review").put(isAuthenticatedUser, createProductReview);
-
-router
-  .route("/reviews")
-  .get(getProductReviews)
-  .delete(isAuthenticatedUser, deleteReview);
-
-module.exports = router;
+export default productRouter;
